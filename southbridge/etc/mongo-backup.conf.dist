@@ -1,0 +1,27 @@
+# Host name (or IP address) of MySQL server e.g localhost
+DBHOST=localhost
+
+#daemon port
+DBPORT="27017"
+
+# Backup directory location e.g /backups
+BACKUPDIR="/var/backups/mongodb"
+
+# Nice running level
+NICE=20
+
+# Mail setup
+# What would you like to be mailed to you?
+# - log   : send only log file
+# - files : send log file and sql files as attachments (see docs)
+# - stdout : will simply output the log to the screen if run manually.
+# - quiet : Only send logs if an error occurs to the MAILADDR.
+MAILCONTENT="stdoutt"
+
+# Email Address to send mail to? (user@domain.com)
+MAILADDR="root"
+
+#параметры для хот бэкапа
+#DO_HOT_BACKUP=yes
+#в случае изменения этой переменной необходимо внести соответствующие изменения в файл etc/mongo-backup.js !!!
+#HOTBACKUPDIR="/var/lib/mongodb.backup"
