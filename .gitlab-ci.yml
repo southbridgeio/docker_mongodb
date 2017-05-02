@@ -2,4 +2,7 @@ copy1:
  stage: build
  script:
    - pwd
-   - git push --mirror git@github.com:centosadmin/docker_mongodb.git
+   - git remote set-url --push origin  git@github.com:centosadmin/docker_mongodb.git
+   - git push --mirror
+   
+#   - git push --mirror git@github.com:centosadmin/docker_mongodb.git
