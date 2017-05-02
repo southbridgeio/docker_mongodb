@@ -346,26 +346,26 @@ else
 fi
 
 # Try to select an available secondary for the backup or fallback to DBHOST.
-#if [ "x${REPLICAONSLAVE}" == "xyes" ] ; then
-#  # Return value via indirect-reference hack ...
-#  select_secondary_member secondary
+if [ "x${REPLICAONSLAVE}" == "xyes" ] ; then
+  # Return value via indirect-reference hack ...
+  select_secondary_member secondary
 
-#  if [ -n "$secondary" ] ; then
-#    DBHOST=${secondary%%:*}
-#    DBPORT=${secondary##*:}
-#  else
-#    SECONDARY_WARNING="WARNING: No suitable Secondary found in the Replica Sets. Falling back to ${DBHOST}."
-#  fi
-#fi
+  if [ -n "$secondary" ] ; then
+    DBHOST=${secondary%%:*}
+    DBPORT=${secondary##*:}
+  else
+    SECONDARY_WARNING="WARNING: No suitable Secondary found in the Replica Sets. Falling back to ${DBHOST}."
+  fi
+fi
 
 echo ======================================================================
 echo AutoMongoBackup VER $VER
 
-#[ ! -z "$SECONDARY_WARNING" ] &&
-#{
-#    echo
-#    echo "$SECONDARY_WARNING"
-#}
+[ ! -z "$SECONDARY_WARNING" ] &&
+{
+    echo
+    echo "$SECONDARY_WARNING"
+}
 
 echo
 echo Backup of Database Server - $HOST on $DBHOST
@@ -462,7 +462,7 @@ else
 	echo "###### WARNING ######"
         echo "STDERR written to during mongodump execution."
         echo "The backup probably succeeded, as mongodump sometimes writes to STDERR, but you may wish to scan the error log below:"
-        #cat "$LOGERR"
+        cat "$LOGERR"
     else
 	cat "$LOGFILE"
     fi
