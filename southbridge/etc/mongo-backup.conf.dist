@@ -24,4 +24,4 @@ MAILADDR="root"
 #параметры для хот бэкапа
 #DO_HOT_BACKUP=yes
 #в случае изменения этой переменной необходимо внести соответствующие изменения в файл etc/mongo-backup.js !!!
-#HOTBACKUPDIR="/var/lib/mongodb.backup"
+#HOTBACKUPDIR="/var/backups/mongodb/hot"

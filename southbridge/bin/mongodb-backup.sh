@@ -184,6 +184,9 @@ if [ "$DO_HOT_BACKUP" = "yes" ]; then
 	echo "$LOCATION/etc/mongo-backup.js not found"
 	exit 0
     fi
+    if [ -n "$HOTBACKUPDIR" ]; then
+      mkdir -p "$HOTBACKUPDIR"
+    fi
 fi
 
 # Do we enable and use journaling?
