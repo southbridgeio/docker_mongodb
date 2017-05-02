@@ -67,7 +67,7 @@ LATESTLINK="yes"
 OPLOG="yes"
 
 # Enable and use journaling.
-JOURNAL="yes"
+JOURNAL="no"
 
 # Choose other Server if is Replica-Set Master
 #REPLICAONSLAVE="no"
@@ -143,6 +143,7 @@ LOGERR=$BACKUPDIR/ERRORS_$DBHOST-`date +%N`.log # Logfile Name
 BACKUPFILES=""
 OPT="" # OPT string for use with mongodump
 LOCATION="$(cd -P -- "$(dirname -- "$0")" && pwd -P)/.."
+#"
 
 if [ -f "$LOCATION/etc/mongo-backup.conf.dist" ]; then
     . "$LOCATION/etc/mongo-backup.conf.dist"
@@ -245,12 +246,13 @@ exec 2> $LOGERR # stderr replaced with file $LOGERR.
 # Database dump function
 dbdump () {
     if [ "$DO_HOT_BACKUP" = "yes" ]; then
-	$NICE_CMD mongo admin $LOCATION/etc/mongodb_backup.js
+	$NICE_CMD mongo admin $LOCATION/etc/mongo-backup.js
+	mv $HOTBACKUPDIR $1
 	[ -e "$1" ] && return 0
 	echo "ERROR: mongo failed to create hot backup: $1" >&2
 	return 1
     else
-	$NICE_CMD mongodump --host=$DBHOST:$DBPORT --out=$1 #$OPT
+	$NICE_CMD mongodump --host=$DBHOST:$DBPORT --out=$1 $OPT
 	[ -e "$1" ] && return 0
 	echo "ERROR: mongodump failed to create dumpfile: $1" >&2
 	return 1
@@ -273,6 +275,7 @@ function select_secondary_member {
   if [ ${#members[@]} -gt 1 ] ; then
 	for member in "${members[@]}" ; do
 	    is_secondary=$(mongo --quiet --host $member --eval 'rs.isMaster().secondary')
+#'
         	case "$is_secondary" in
         	'true')
                 # First secondary wins ...
@@ -354,8 +357,18 @@ if [ "x${REPLICAONSLAVE}" == "xyes" ] ; then
   select_secondary_member secondary
 
   if [ -n "$secondary" ] ; then
-    DBHOST=${secondary%%:*}
-    DBPORT=${secondary##*:}
+    if [ "x${LOCAL_REPLICAONSLAVE}" == "xyes" ] ; then
+      DBHOST_LOCAL=${secondary%%:*}
+      DBPORT_LOCAL=${secondary##*:}
+      isslave=`ip add | grep "$DBHOST_LOCAL/"| wc -l`
+      if [ $isslave -eq 0 ]; then
+        echo "Running on master. skip backup"
+        SKIP_BACKUP=yes
+      fi
+    else
+      DBHOST=${secondary%%:*}
+      DBPORT=${secondary##*:}
+    fi
   else
     SECONDARY_WARNING="WARNING: No suitable Secondary found in the Replica Sets. Falling back to ${DBHOST}."
   fi
@@ -370,6 +383,7 @@ echo AutoMongoBackup VER $VER
     echo "$SECONDARY_WARNING"
 }
 
+if [ "$SKIP_BACKUP" != "yes" ]; then
 echo
 echo Backup of Database Server - $HOST on $DBHOST
 echo ======================================================================
@@ -421,6 +435,7 @@ echo Size - Location
 echo `du -hs "$BACKUPDIR"`
 echo
 echo ======================================================================
+fi
 
 # Run command when we're done
 if [ "$POSTBACKUP" ]
@@ -438,8 +453,9 @@ fi
 if [ -s "$LOGERR" ]
     then
     sed -i "/^connected/d" "$LOGERR"
-    sed -i "/writing/d" "$LOGERR" 
-    sed -i "/done/d" "$LOGERR" 
+    sed -i "/writing/d" "$LOGERR"
+    sed -i "/done/d" "$LOGERR"
+    sed -i "/dumped .* oplog entries/d" "$LOGERR"
 fi
 
 if [ "$MAILCONTENT" = "log" ]
@@ -449,7 +465,7 @@ if [ "$MAILCONTENT" = "log" ]
 	    cat "$LOGERR"
 	    (cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: Mongo Backup error Log for $HOST - $DATE" $MAILADDR
     fi
-    
+
 elif [ "$MAILCONTENT" = "quiet" ]
     then
     if [ -s "$LOGERR" ]

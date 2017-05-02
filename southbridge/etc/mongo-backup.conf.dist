@@ -7,6 +7,12 @@ DBPORT="27017"
 # Backup directory location e.g /backups
 BACKUPDIR="/var/backups/mongodb"
 
+# Backup data from secondary replica set
+REPLICAONSLAVE=yes
+
+# Backup data from secondary replica set connected local
+LOCAL_REPLICAONSLAVE=yes
+
 # Nice running level
 NICE=20
 
@@ -22,6 +28,6 @@ MAILCONTENT="stdoutt"
 MAILADDR="root"
 
 #параметры для хот бэкапа
-#DO_HOT_BACKUP=yes
+DO_HOT_BACKUP=yes
 #в случае изменения этой переменной необходимо внести соответствующие изменения в файл etc/mongo-backup.js !!!
-#HOTBACKUPDIR="/var/backups/mongodb/hot"
+HOTBACKUPDIR="/var/backups/mongodb/hot"
