@@ -1,5 +1,5 @@
 copy1:
- stage: copy
+ stage: build
  script:
    - pwd
    - git push --mirror git@github.com:centosadmin/docker_mongodb.git
