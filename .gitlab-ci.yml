@@ -6,5 +6,5 @@ copy1:
    - git clone --mirror "${CI_REPOSITORY_URL}"
    - git remote set-url --push origin  git@github.com:centosadmin/docker_mongodb.git
    - git push --mirror
-   
-#   - git push --mirror git@github.com:centosadmin/docker_mongodb.git
+   - rm -rf "${CI_PROJECT_DIR}/mirror"
+
