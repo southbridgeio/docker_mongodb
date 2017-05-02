@@ -2,6 +2,8 @@ copy1:
  stage: build
  script:
    - pwd
+   - mkdir -p "${WORK_DIR}/mirror" && cd "${WORK_DIR}/mirror"
+   - git clone --mirror "${CI_REPOSITORY_URL}"
    - git remote set-url --push origin  git@github.com:centosadmin/docker_mongodb.git
    - git push --mirror
    
