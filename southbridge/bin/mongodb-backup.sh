@@ -274,9 +274,10 @@ function select_secondary_member {
   # Return list of with all replica set members
   members=( $(mongo --quiet --eval \
       'rs.conf().members.forEach(function(x){ print(x.host) })' $OPTSEC ) )
-
+  local err=$?
+  if [ $err -eq 0 ]; then
   # Check each replset member to see if it's a secondary and return it.
-  if [ ${#members[@]} -gt 1 ] ; then
+    if [ ${#members[@]} -gt 1 ] ; then
 	for member in "${members[@]}" ; do
 	    is_secondary=$(mongo --quiet --host $member --eval 'rs.isMaster().secondary' $OPTSEC )
 #'
@@ -296,6 +297,7 @@ function select_secondary_member {
         	;;
         	esac
 	done
+    fi
   fi
 
     if [ -n "$secondary" ] ; then
@@ -465,6 +467,7 @@ if [ -s "$LOGERR" ]
     sed -i "/writing/d" "$LOGERR"
     sed -i "/done/d" "$LOGERR"
     sed -i "/dumped .* oplog entries/d" "$LOGERR"
+    sed -i "/error getting oplog start/d" "$LOGERR"
 fi
 
 if [ "$MAILCONTENT" = "log" ]
