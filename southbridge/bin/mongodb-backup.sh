@@ -11,7 +11,6 @@
 
 # External config - override default values set below
 # EXTERNAL_CONFIG="/etc/default/automongobackup" # debian style
-EXTERNAL_CONFIG="/srv/southbridge/etc/mongo-backup.conf" # centos style
 
 # Username to access the mongo server e.g. dbuser
 # Unnecessary if authentication is off
@@ -151,6 +150,9 @@ if [ -f "$LOCATION/etc/mongo-backup.conf.dist" ]; then
     . "$LOCATION/etc/mongo-backup.conf.dist"
     if [ -f "$LOCATION/etc/mongo-backup.conf" ]; then
 	. "$LOCATION/etc/mongo-backup.conf"
+    fi
+    if [ -f "$LOCATION/etc/mongo-backup.local.conf" ]; then
+	. "$LOCATION/etc/mongo-backup.local.conf"
     fi
 else
     echo "mongo-backup.conf.dist not found"
