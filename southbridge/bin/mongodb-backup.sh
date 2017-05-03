@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # MongoDB Backup Script
-# VER. 0.9
+# VER. 0.9.0.11-sb
 # More Info: http://github.com/micahwedemeyer/automongobackup
 #=====================================================================
 #=====================================================================
@@ -124,7 +124,7 @@ if [ ! -f "/root/.mongodb" ];then
 fi 
 
 # Include external config
-[ ! -z "$EXTERNAL_CONFIG" ] && [ -f "$EXTERNAL_CONFIG" ] && source "${EXTERNAL_CONFIG}"
+#[ ! -z "$EXTERNAL_CONFIG" ] && [ -f "$EXTERNAL_CONFIG" ] && source "${EXTERNAL_CONFIG}"
 # Include extra config file if specified on commandline, e.g. for backuping several remote dbs from central server
 [ ! -z "$1" ] && [ -f "$1" ] && source ${1}
 
@@ -137,11 +137,13 @@ DNOW=`date +%u` # Day number of the week 1 to 7 where 1 represents Monday
 DOM=`date +%d` # Date of the Month e.g. 27
 M=`date +%B` # Month e.g January
 W=`date +%V` # Week Number e.g 37
-VER=0.9 # Version Number
+VER=0.9.0.11-sb # Version Number
 LOGFILE=$BACKUPDIR/$DBHOST-`date +%N`.log # Logfile Name
 LOGERR=$BACKUPDIR/ERRORS_$DBHOST-`date +%N`.log # Logfile Name
 BACKUPFILES=""
-OPT="" # OPT string for use with mongodump
+OPT=""                                            # OPT string for use with mongodump
+OPTSEC=""                                         # OPT string for use with mongodump in select_secondary_member function
+QUERY=""                                          # QUERY string for use with mongodump
 LOCATION="$(cd -P -- "$(dirname -- "$0")" && pwd -P)/.."
 #"
 
@@ -159,6 +161,11 @@ fi
 if [ "$DBUSERNAME" ]
     then
     OPT="$OPT --username=$DBUSERNAME --password=$DBPASSWORD"
+    OPTSEC="$OPTSEC --username=$DBUSERNAME --password=$DBPASSWORD"
+    if [ "$REQUIREDBAUTHDB" = "yes" ]; then
+        OPT="$OPT --authenticationDatabase=$DBAUTHDB"
+        OPTSEC="$OPTSEC --authenticationDatabase=$DBAUTHDB"
+    fi
 fi
 
 if [ ! "$NICE" ]; then
@@ -180,6 +187,7 @@ if [ ! "$DO_HOT_BACKUP" ];
     then
     DO_HOT_BACKUP="no"
 fi
+
 if [ "$DO_HOT_BACKUP" = "yes" ]; then
     if [ ! -f "$LOCATION/etc/mongo-backup.js" ]; then
 	echo "$LOCATION/etc/mongo-backup.js not found"
@@ -190,32 +198,27 @@ if [ "$DO_HOT_BACKUP" = "yes" ]; then
     fi
 fi
 
-# Do we enable and use journaling?
-if [ "$JOURNAL" = "yes" ]
-    then
-    OPT="$OPT --journal"
+# Do we need to backup only a specific database?
+if [ "$DBNAME" ]; then
+  OPT="$OPT -d $DBNAME"
+fi
+
+# Do we need to backup only a specific collections?
+if [ "$COLLECTIONS" ]; then
+  for x in $COLLECTIONS; do
+    OPT="$OPT --collection $x"
+  done
+fi
+
+# Do we need to exclude collections?
+if [ "$EXCLUDE_COLLECTIONS" ]; then
+  for x in $EXCLUDE_COLLECTIONS; do
+    OPT="$OPT --excludeCollection $x"
+  done
 fi
 
 # Create required directories
-if [ ! -e "$BACKUPDIR" ] # Check Backup Directory exists.
-    then
-    mkdir -p "$BACKUPDIR"
-fi
-
-if [ ! -e "$BACKUPDIR/daily" ] # Check Daily Directory exists.
-    then
-    mkdir -p "$BACKUPDIR/daily"
-fi
-
-if [ ! -e "$BACKUPDIR/weekly" ] # Check Weekly Directory exists.
-    then
-    mkdir -p "$BACKUPDIR/weekly"
-fi
-
-if [ ! -e "$BACKUPDIR/monthly" ] # Check Monthly Directory exists.
-    then
-    mkdir -p "$BACKUPDIR/monthly"
-fi
+mkdir -p $BACKUPDIR/{daily,weekly,monthly}
 
 if [ "$LATEST" = "yes" ]
     then
@@ -223,7 +226,6 @@ if [ "$LATEST" = "yes" ]
 	then
 	mkdir -p "$BACKUPDIR/latest"
     fi
-
     eval rm -f "$BACKUPDIR/latest/*"
 fi
 
@@ -269,12 +271,12 @@ function select_secondary_member {
 
   # Return list of with all replica set members
   members=( $(mongo --quiet --eval \
-      'rs.conf().members.forEach(function(x){ print(x.host) })') )
+      'rs.conf().members.forEach(function(x){ print(x.host) })' $OPTSEC ) )
 
   # Check each replset member to see if it's a secondary and return it.
   if [ ${#members[@]} -gt 1 ] ; then
 	for member in "${members[@]}" ; do
-	    is_secondary=$(mongo --quiet --host $member --eval 'rs.isMaster().secondary')
+	    is_secondary=$(mongo --quiet --host $member --eval 'rs.isMaster().secondary' $OPTSEC )
 #'
         	case "$is_secondary" in
         	'true')
@@ -393,38 +395,43 @@ echo ======================================================================
 # Monthly Full Backup of all Databases
 if [ $DOM = "01" ]; then
     echo Monthly Full Backup
-    dbdump "$BACKUPDIR/monthly/$DATE.$M" &&
-    compression "$BACKUPDIR/monthly/" "$DATE.$M"
+    echo
+    if [[ $BACKUP_MONTH -ge 0 ]] ; then
+      NUM_OLD_FILES=$(find $BACKUPDIR/monthly -depth -not -newermt "$BACKUP_MONTH month ago" -type f | wc -l)
+      if [[ $NUM_OLD_FILES -gt 0 ]] ; then
+        echo Deleting "$NUM_OLD_FILES" global setting backup file\(s\) older than "$BACKUP_MONTH" month\(s\) old.
+        find $BACKUPDIR/monthly -not -newermt "$BACKUP_MONTH month ago" -type f -delete
+      fi
+    fi
+    dbdump "$BACKUPDIR/monthly/$DATE.$M" &&  compression "$BACKUPDIR/monthly/" "$DATE.$M"
 echo ----------------------------------------------------------------------
 
 # Weekly Backup
 elif [ $DNOW = $DOWEEKLY ]; then
     echo Weekly Backup
     echo
-    echo Rotating 5 weeks Backups...
-if [ "$W" -le 05 ];then
-    REMW=`expr 48 + $W`
-elif [ "$W" -lt 15 ];then
-    REMW=0`expr $W - 5`
-else
-    REMW=`expr $W - 5`
-fi
-
-eval rm -f "$BACKUPDIR/weekly/week.$REMW.*"
-echo
-    dbdump "$BACKUPDIR/weekly/week.$W.$DATE" &&
-    compression "$BACKUPDIR/weekly/" "week.$W.$DATE"
+    if [[ $BACKUP_WEEKS -ge 0 ]] ; then
+      NUM_OLD_FILES=$(find $BACKUPDIR/weekly -depth -not -newermt "$BACKUP_WEEKS week ago" -type f | wc -l)
+      if [[ $NUM_OLD_FILES -gt 0 ]] ; then
+        echo Deleting "$NUM_OLD_FILES" global setting backup file\(s\) older than "$BACKUP_WEEKS" week\(s\) old.
+        find $BACKUPDIR/weekly -not -newermt "$BACKUP_WEEKS week ago" -type f -delete
+      fi
+    fi
+    dbdump "$BACKUPDIR/weekly/week.$W.$DATE" &&  compression "$BACKUPDIR/weekly/" "week.$W.$DATE"
 echo ----------------------------------------------------------------------
 
 # Daily Backup
 else
 echo Daily Backup of Databases
-echo Rotating last weeks Backup...
 echo
-    eval rm -f "$BACKUPDIR/daily/*.$DOW.*"
-echo
-    dbdump "$BACKUPDIR/daily/$DATE.$DOW" &&
-    compression "$BACKUPDIR/daily/" "$DATE.$DOW"
+    if [[ $BACKUP_DAYS -ge 0 ]] ; then
+      NUM_OLD_FILES=$(find $BACKUPDIR/daily -depth -not -newermt "$BACKUP_DAYS days ago" -type f | wc -l)
+      if [[ $NUM_OLD_FILES -gt 0 ]] ; then
+        echo Deleting "$NUM_OLD_FILES" global setting backup file\(s\) older than "$BACKUP_DAYS" day\(s\) old.
+        find $BACKUPDIR/weekly -not -newermt "$BACKUP_DAYS days ago" -type f -delete
+      fi
+    fi
+    dbdump "$BACKUPDIR/daily/$DATE.$DOW" && compression "$BACKUPDIR/daily/" "$DATE.$DOW"
 echo ----------------------------------------------------------------------
 fi
 echo Backup End Time `date`
@@ -488,12 +495,9 @@ else
 fi
 
 # TODO: Would be nice to know if there were any *actual* errors in the $LOGERR
-#STATUS=1
-if [ -s "$LOGERR" ]
-    then
-	STATUS=1
-    else
-        STATUS=0
+STATUS=0
+if [ -s "$LOGERR" ]; then
+  STATUS=1
 fi
 # Clean up Logfile
 eval rm -f "$LOGFILE"

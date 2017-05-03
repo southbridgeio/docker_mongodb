@@ -4,6 +4,28 @@ DBHOST=localhost
 #daemon port
 DBPORT="27017"
 
+# Collections name list to include e.g. system.profile users
+# DBNAME is required
+# Unecessary if backup all collections
+# COLLECTIONS=""
+
+# Collections to exclude e.g. system.profile users
+# DBNAME is required
+# Unecessary if backup all collections
+# EXCLUDE_COLLECTIONS=""
+
+# Username to access the mongo server e.g. dbuser
+# Unnecessary if authentication is off
+# DBUSERNAME=""
+
+# Password to access the mongo server e.g. password
+# Unnecessary if authentication is off
+# DBPASSWORD=""
+
+# Database for authentication to the mongo server e.g. admin
+# Unnecessary if authentication is off
+# DBAUTHDB=""
+
 # Backup directory location e.g /backups
 BACKUPDIR="/var/backups/mongodb"
 
@@ -26,6 +48,15 @@ MAILCONTENT="stdoutt"
 
 # Email Address to send mail to? (user@domain.com)
 MAILADDR="root"
+
+# How many month keep backups
+BACKUP_MONTH=4
+
+# How many weeks keep backups
+BACKUP_WEEKS=4
+
+# How many days keep backups
+BACKUP_DAYS=5
 
 #параметры для хот бэкапа
 DO_HOT_BACKUP=yes
