@@ -8,8 +8,7 @@ if [ -f "$LOCATION/etc/mongo-backup.local.conf" ]; then
   rm "$LOCATION/etc/mongo-backup.local.conf"
 fi
 
-for e in `env | grep "^MONGO_BACKUP"`; do
- e=${e#MONGO_BACKUP}
- echo "$e" 
+for e in `env | grep "^MONGO_BACKUP_"`; do
+ e=${e#MONGO_BACKUP_}
  echo "$e" >> "$LOCATION/etc/mongo-backup.local.conf"
 done
