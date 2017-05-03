@@ -146,6 +146,10 @@ QUERY=""                                          # QUERY string for use with mo
 LOCATION="$(cd -P -- "$(dirname -- "$0")" && pwd -P)/.."
 #"
 
+if [ -x "$LOCATION/bin/docker-mongodb-backup-config.sh" ]; then
+  $LOCATION/bin/docker-mongodb-backup-config.sh
+fi
+
 if [ -f "$LOCATION/etc/mongo-backup.conf.dist" ]; then
     . "$LOCATION/etc/mongo-backup.conf.dist"
     if [ -f "$LOCATION/etc/mongo-backup.conf" ]; then

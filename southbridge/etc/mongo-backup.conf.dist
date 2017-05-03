@@ -4,6 +4,9 @@ DBHOST=localhost
 #daemon port
 DBPORT="27017"
 
+# Backup directory location e.g /backups
+BACKUPDIR="/var/backups/mongodb"
+
 # Collections name list to include e.g. system.profile users
 # DBNAME is required
 # Unecessary if backup all collections
@@ -26,9 +29,6 @@ DBPORT="27017"
 # Unnecessary if authentication is off
 # DBAUTHDB=""
 
-# Backup directory location e.g /backups
-BACKUPDIR="/var/backups/mongodb"
-
 # Backup data from secondary replica set
 REPLICAONSLAVE=yes
 
@@ -49,6 +49,9 @@ MAILCONTENT="stdoutt"
 # Email Address to send mail to? (user@domain.com)
 MAILADDR="root"
 
+# Which day do you want weekly backups? (1 to 7 where 1 is Monday)
+DOWEEKLY=6
+
 # How many month keep backups
 BACKUP_MONTH=4
 
@@ -58,7 +61,16 @@ BACKUP_WEEKS=4
 # How many days keep backups
 BACKUP_DAYS=5
 
+# Choose Compression type. (gzip or bzip2)
+COMP="gzip"
+
+# Choose if the uncompressed folder should be deleted after compression has completed
+CLEANUP="yes"
+
 #параметры для хот бэкапа
 DO_HOT_BACKUP=yes
 #в случае изменения этой переменной необходимо внести соответствующие изменения в файл etc/mongo-backup.js !!!
 HOTBACKUPDIR="/var/backups/mongodb/hot"
+
+
+
