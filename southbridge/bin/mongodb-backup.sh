@@ -137,8 +137,6 @@ DOM=`date +%d` # Date of the Month e.g. 27
 M=`date +%B` # Month e.g January
 W=`date +%V` # Week Number e.g 37
 VER=0.9.0.11-sb # Version Number
-LOGFILE=$BACKUPDIR/$DBHOST-`date +%N`.log # Logfile Name
-LOGERR=$BACKUPDIR/ERRORS_$DBHOST-`date +%N`.log # Logfile Name
 BACKUPFILES=""
 OPT=""                                            # OPT string for use with mongodump
 OPTSEC=""                                         # OPT string for use with mongodump in select_secondary_member function
@@ -162,6 +160,9 @@ else
     echo "mongo-backup.conf.dist not found"
     exit 0
 fi
+
+LOGFILE=$BACKUPDIR/$DBHOST-`date +%N`.log # Logfile Name
+LOGERR=$BACKUPDIR/ERRORS_$DBHOST-`date +%N`.log # Logfile Name
 
 # Do we need to use a username/password?
 if [ "$DBUSERNAME" ]
