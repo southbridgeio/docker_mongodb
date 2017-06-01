@@ -471,7 +471,7 @@ if [ -s "$LOGERR" ]
     sed -i "/^connected/d" "$LOGERR"
     sed -i "/writing/d" "$LOGERR"
     sed -i "/done/d" "$LOGERR"
-    sed -i "/dumped .* oplog entries/d" "$LOGERR"
+    sed -i "/dumped .* oplog entr/d" "$LOGERR"
     sed -i "/error getting oplog start/d" "$LOGERR"
 fi
 
@@ -493,14 +493,20 @@ elif [ "$MAILCONTENT" = "quiet" ]
 else
     if [ -s "$LOGERR" ]
 	then
-	cat "$LOGFILE"
-	echo
-	echo "###### WARNING ######"
+	echo "###### STDERR LOG WARNING ######"
         echo "STDERR written to during mongodump execution."
         echo "The backup probably succeeded, as mongodump sometimes writes to STDERR, but you may wish to scan the error log below:"
-        cat "$LOGERR"
-    else
+        echo "--- start stdout log ---"
 	cat "$LOGFILE"
+        echo "--- finish stdout log ---"
+	echo 
+        echo "--- start stderr log ---"
+        cat "$LOGERR"
+        echo "--- finish stderr log ---"
+    else
+        echo "--- start stdout log ---"
+	cat "$LOGFILE"
+        echo "--- finish stdout log ---"
     fi
 fi
 
