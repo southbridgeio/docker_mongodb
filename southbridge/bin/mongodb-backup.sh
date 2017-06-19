@@ -410,7 +410,6 @@ if [ $DOM = "01" ]; then
       fi
     fi
     dbdump "$BACKUPDIR/monthly/$DATE.$M" &&  compression "$BACKUPDIR/monthly/" "$DATE.$M"
-    echo DUMPCODE $DUMPCODE
 echo ----------------------------------------------------------------------
 
 # Weekly Backup
@@ -425,7 +424,6 @@ elif [ $DNOW = $DOWEEKLY ]; then
       fi
     fi
     dbdump "$BACKUPDIR/weekly/week.$W.$DATE" &&  compression "$BACKUPDIR/weekly/" "week.$W.$DATE"
-    echo DUMPCODE $DUMPCODE
 echo ----------------------------------------------------------------------
 
 # Daily Backup
@@ -440,7 +438,6 @@ echo
       fi
     fi
     dbdump "$BACKUPDIR/daily/$DATE.$DOW" && compression "$BACKUPDIR/daily/" "$DATE.$DOW"
-echo DUMPCODE $DUMPCODE
 echo ----------------------------------------------------------------------
 fi
 echo Backup End Time `date`
@@ -469,19 +466,25 @@ fi
 
 if [ "$MAILCONTENT" = "quiet" ];then
     if [ $DUMPCODE -ne 0 ];then
-        (cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
+        (echo "stderr log:";cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
 	echo Mailsend
     fi
 else
     if [ $DUMPCODE -ne 0 ];then
+	echo "--- start stdout log ---" 
         cat "$LOGFILE"
+	echo "--- finish stdout log ---"
         echo
         echo "###### WARNING ######"
         echo "STDERR written to during mongodump execution."
         echo "The backup probably succeeded, as mongodump sometimes writes to STDERR, but you may wish to scan the error log below:"
+	echo "--- start stderr log ---" 
 	>&2 cat "$LOGERR"
+	echo "--- finish stderr log ---" 
     else
+	echo "--- start stdout log ---"
         cat "$LOGFILE"
+	echo "--- finish stdout log ---"
     fi
 fi
 
@@ -489,4 +492,4 @@ fi
 eval rm -f "$LOGFILE"
 eval rm -f "$LOGERR"
 
-exit $STATUS
+exit $DUMPCODE
