@@ -340,6 +340,7 @@ return 0
 # Run command before we begin
 if [ "$PREBACKUP" ]
 then
+echo
 echo ======================================================================
 echo "Prebackup command output."
 echo
@@ -394,9 +395,11 @@ echo AutoMongoBackup VER $VER
 if [ "$SKIP_BACKUP" != "yes" ]; then
 echo
 echo Backup of Database Server - $HOST on $DBHOST
+echo
 echo ======================================================================
-
+echo
 echo Backup Start `date`
+echo
 echo ======================================================================
 # Monthly Full Backup of all Databases
 if [ $DOM = "01" ]; then
@@ -410,7 +413,8 @@ if [ $DOM = "01" ]; then
       fi
     fi
     dbdump "$BACKUPDIR/monthly/$DATE.$M" &&  compression "$BACKUPDIR/monthly/" "$DATE.$M"
-echo ----------------------------------------------------------------------
+echo
+echo ======================================================================
 
 # Weekly Backup
 elif [ $DNOW = $DOWEEKLY ]; then
@@ -424,7 +428,8 @@ elif [ $DNOW = $DOWEEKLY ]; then
       fi
     fi
     dbdump "$BACKUPDIR/weekly/week.$W.$DATE" &&  compression "$BACKUPDIR/weekly/" "week.$W.$DATE"
-echo ----------------------------------------------------------------------
+echo
+echo ======================================================================
 
 # Daily Backup
 else
@@ -438,11 +443,12 @@ echo
       fi
     fi
     dbdump "$BACKUPDIR/daily/$DATE.$DOW" && compression "$BACKUPDIR/daily/" "$DATE.$DOW"
-echo ----------------------------------------------------------------------
+echo
+echo ======================================================================
 fi
 echo Backup End Time `date`
+echo
 echo ======================================================================
-
 echo Total disk space used for backup storage..
 echo Size - Location
 echo `du -hs "$BACKUPDIR"`
@@ -453,6 +459,7 @@ fi
 # Run command when we're done
 if [ "$POSTBACKUP" ]
 then
+echo
 echo ======================================================================
 echo "Postbackup command output."
 echo
@@ -466,7 +473,7 @@ fi
 
 if [ "$MAILCONTENT" = "quiet" ];then
     if [ $DUMPCODE -ne 0 ];then
-        (echo "stderr log:";cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
+        (echo "### STDERR log:";cat "$LOGERR";echo "### STDOUT log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
     fi
 else
     if [ $DUMPCODE -ne 0 ];then
