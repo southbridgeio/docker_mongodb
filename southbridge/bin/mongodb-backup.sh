@@ -31,8 +31,8 @@ BACKUPDIR="/var/backups/mongodb"
 
 # Mail setup
 # What would you like to be mailed to you?
-# - quiet : Only send logs if an error occurs to the MAILADDR.
 # - stdout : will simply output the log to the screen if run manually.
+# - quiet : Only send logs if an error occurs to the MAILADDR.
 MAILCONTENT="quiet"
 
 # Set the maximum allowed email size in k. (4000 = approx 5MB email [see docs])
