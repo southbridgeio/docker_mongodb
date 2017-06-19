@@ -467,7 +467,6 @@ fi
 if [ "$MAILCONTENT" = "quiet" ];then
     if [ $DUMPCODE -ne 0 ];then
         (echo "stderr log:";cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
-	echo Mailsend
     fi
 else
     if [ $DUMPCODE -ne 0 ];then
