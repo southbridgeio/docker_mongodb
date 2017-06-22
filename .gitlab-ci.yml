@@ -1,4 +1,6 @@
 copy1:
+ tags:
+   - github
  stage: build
  script:
    - pwd
