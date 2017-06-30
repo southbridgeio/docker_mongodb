@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # MongoDB Backup Script
-# VER. 0.9.0.11-sb
+# VER. 0.9.0.12-sb
 # More Info: http://github.com/micahwedemeyer/automongobackup
 #=====================================================================
 #=====================================================================
@@ -31,8 +31,6 @@ BACKUPDIR="/var/backups/mongodb"
 
 # Mail setup
 # What would you like to be mailed to you?
-# - log : send only log file
-# - files : send log file and sql files as attachments (see docs)
 # - stdout : will simply output the log to the screen if run manually.
 # - quiet : Only send logs if an error occurs to the MAILADDR.
 MAILCONTENT="quiet"
@@ -57,13 +55,13 @@ COMP="gzip"
 CLEANUP="yes"
 
 # Additionally keep a copy of the most recent backup in a seperate directory.
-LATEST="yes"
+LATEST="no"
 
 # Make Hardlink not a copy
-LATESTLINK="yes"
+LATESTLINK="no"
 
 # Use oplog for point-in-time snapshotting.
-OPLOG="yes"
+OPLOG="no"
 
 # Enable and use journaling.
 JOURNAL="no"
@@ -136,7 +134,7 @@ DNOW=`date +%u` # Day number of the week 1 to 7 where 1 represents Monday
 DOM=`date +%d` # Date of the Month e.g. 27
 M=`date +%B` # Month e.g January
 W=`date +%V` # Week Number e.g 37
-VER=0.9.0.11-sb # Version Number
+VER=0.9.0.12-sb # Version Number
 BACKUPFILES=""
 OPT=""                                            # OPT string for use with mongodump
 OPTSEC=""                                         # OPT string for use with mongodump in select_secondary_member function
@@ -247,21 +245,20 @@ exec 7>&2 # Link file descriptor #7 with stderr.
                     # Saves stderr.
 exec 2> $LOGERR # stderr replaced with file $LOGERR.
 
-# When a desire is to receive log via e-mail then we close stdout and stderr.
-[ "x$MAILCONTENT" == "xlog" ] && exec 6>&- 7>&-
-
 # Functions
 
 # Database dump function
 dbdump () {
     if [ "$DO_HOT_BACKUP" = "yes" ]; then
 	$NICE_CMD mongo admin $LOCATION/etc/mongo-backup.js
+	DUMPCODE=$?
 	mv $HOTBACKUPDIR $1
 	[ -e "$1" ] && return 0
 	echo "ERROR: mongo failed to create hot backup: $1" >&2
 	return 1
     else
 	$NICE_CMD mongodump --host=$DBHOST:$DBPORT --out=$1 $OPT
+	DUMPCODE=$?
 	[ -e "$1" ] && return 0
 	echo "ERROR: mongodump failed to create dumpfile: $1" >&2
 	return 1
@@ -343,6 +340,7 @@ return 0
 # Run command before we begin
 if [ "$PREBACKUP" ]
 then
+echo
 echo ======================================================================
 echo "Prebackup command output."
 echo
@@ -397,9 +395,11 @@ echo AutoMongoBackup VER $VER
 if [ "$SKIP_BACKUP" != "yes" ]; then
 echo
 echo Backup of Database Server - $HOST on $DBHOST
+echo
 echo ======================================================================
-
+echo
 echo Backup Start `date`
+echo
 echo ======================================================================
 # Monthly Full Backup of all Databases
 if [ $DOM = "01" ]; then
@@ -413,7 +413,8 @@ if [ $DOM = "01" ]; then
       fi
     fi
     dbdump "$BACKUPDIR/monthly/$DATE.$M" &&  compression "$BACKUPDIR/monthly/" "$DATE.$M"
-echo ----------------------------------------------------------------------
+echo
+echo ======================================================================
 
 # Weekly Backup
 elif [ $DNOW = $DOWEEKLY ]; then
@@ -427,7 +428,8 @@ elif [ $DNOW = $DOWEEKLY ]; then
       fi
     fi
     dbdump "$BACKUPDIR/weekly/week.$W.$DATE" &&  compression "$BACKUPDIR/weekly/" "week.$W.$DATE"
-echo ----------------------------------------------------------------------
+echo
+echo ======================================================================
 
 # Daily Backup
 else
@@ -441,11 +443,12 @@ echo
       fi
     fi
     dbdump "$BACKUPDIR/daily/$DATE.$DOW" && compression "$BACKUPDIR/daily/" "$DATE.$DOW"
-echo ----------------------------------------------------------------------
+echo
+echo ======================================================================
 fi
 echo Backup End Time `date`
+echo
 echo ======================================================================
-
 echo Total disk space used for backup storage..
 echo Size - Location
 echo `du -hs "$BACKUPDIR"`
@@ -456,6 +459,7 @@ fi
 # Run command when we're done
 if [ "$POSTBACKUP" ]
 then
+echo
 echo ======================================================================
 echo "Postbackup command output."
 echo
@@ -466,57 +470,32 @@ fi
 
 # Clean up IO redirection if we plan not to deliver log via e-mail.
 [ ! "x$MAILCONTENT" == "xlog" ] && exec 1>&6 2>&7 6>&- 7>&-
-if [ -s "$LOGERR" ]
-    then
-    sed -i "/^connected/d" "$LOGERR"
-    sed -i "/writing/d" "$LOGERR"
-    sed -i "/done/d" "$LOGERR"
-    sed -i "/dumped .* oplog entr/d" "$LOGERR"
-    sed -i "/error getting oplog start/d" "$LOGERR"
-fi
 
-if [ "$MAILCONTENT" = "log" ]
-    then
-    cat "$LOGFILE" | mail -s "Mongo Backup Log for $HOST - $DATE" $MAILADDR
-    if [ -s "$LOGERR" ]; then
-	    cat "$LOGERR"
-	    (cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: Mongo Backup error Log for $HOST - $DATE" $MAILADDR
-    fi
-
-elif [ "$MAILCONTENT" = "quiet" ]
-    then
-    if [ -s "$LOGERR" ]
-    then
-	(cat "$LOGERR";echo "stdout log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
-	cat "$LOGFILE" | mail -s "MongoDB Backup Log for $HOST - $DATE" $MAILADDR
+if [ "$MAILCONTENT" = "quiet" ];then
+    if [ $DUMPCODE -ne 0 ];then
+        (echo "### STDERR log:";cat "$LOGERR";echo "### STDOUT log:" ; cat "$LOGFILE") | mail -s "ERRORS REPORTED: MongoDB Backup error Log for $HOST - $DATE" $MAILADDR
     fi
 else
-    if [ -s "$LOGERR" ]
-	then
-	echo "###### STDERR LOG WARNING ######"
+    if [ $DUMPCODE -ne 0 ];then
+	echo "--- start stdout log ---" 
+        cat "$LOGFILE"
+	echo "--- finish stdout log ---"
+        echo
+        echo "###### WARNING ######"
         echo "STDERR written to during mongodump execution."
         echo "The backup probably succeeded, as mongodump sometimes writes to STDERR, but you may wish to scan the error log below:"
-        echo "--- start stdout log ---"
-	cat "$LOGFILE"
-        echo "--- finish stdout log ---"
-	echo 
-        echo "--- start stderr log ---"
-        cat "$LOGERR"
-        echo "--- finish stderr log ---"
+	echo "--- start stderr log ---" 
+	>&2 cat "$LOGERR"
+	echo "--- finish stderr log ---" 
     else
-        echo "--- start stdout log ---"
-	cat "$LOGFILE"
-        echo "--- finish stdout log ---"
+	echo "--- start stdout log ---"
+        cat "$LOGFILE"
+	echo "--- finish stdout log ---"
     fi
 fi
 
-# TODO: Would be nice to know if there were any *actual* errors in the $LOGERR
-STATUS=0
-if [ -s "$LOGERR" ]; then
-  STATUS=1
-fi
 # Clean up Logfile
 eval rm -f "$LOGFILE"
 eval rm -f "$LOGERR"
 
-exit $STATUS
+exit $DUMPCODE
