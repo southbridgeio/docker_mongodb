@@ -437,7 +437,7 @@ echo
       NUM_OLD_FILES=$(find $BACKUPDIR/daily -depth -not -newermt "$BACKUP_DAYS days ago" -type f | wc -l)
       if [[ $NUM_OLD_FILES -gt 0 ]] ; then
         echo Deleting "$NUM_OLD_FILES" global setting backup file\(s\) older than "$BACKUP_DAYS" day\(s\) old.
-        find $BACKUPDIR/weekly -not -newermt "$BACKUP_DAYS days ago" -type f -delete
+        find $BACKUPDIR/daily -not -newermt "$BACKUP_DAYS days ago" -type f -delete
       fi
     fi
     dbdump "$BACKUPDIR/daily/$DATE.$DOW" && compression "$BACKUPDIR/daily/" "$DATE.$DOW"
