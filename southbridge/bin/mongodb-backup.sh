@@ -139,6 +139,7 @@ BACKUPFILES=""
 OPT=""                                            # OPT string for use with mongodump
 OPTSEC=""                                         # OPT string for use with mongodump in select_secondary_member function
 QUERY=""                                          # QUERY string for use with mongodump
+DUMPCODE=1
 LOCATION="$(cd -P -- "$(dirname -- "$0")" && pwd -P)/.."
 #"
 
