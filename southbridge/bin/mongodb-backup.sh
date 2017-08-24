@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # MongoDB Backup Script
-# VER. 0.9.0.12-sb
+# VER. 0.99-docker
 # More Info: http://github.com/micahwedemeyer/automongobackup
 #=====================================================================
 #=====================================================================
@@ -373,6 +373,7 @@ if [ "x${REPLICAONSLAVE}" == "xyes" ] ; then
       isslave=`ip add | grep "$DBHOST_LOCAL/"| wc -l`
       if [ $isslave -eq 0 ]; then
         echo "Running on master. skip backup"
+        DUMPCODE=0
         SKIP_BACKUP=yes
       fi
     else
