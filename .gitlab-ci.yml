@@ -1,8 +1,0 @@
-copy1:
- tags:
-   - github
- stage: build
- script:
-   - pwd
-   - git remote set-url --push origin  git@github.com:centosadmin/docker_mongodb.git
-   - git push --mirror
